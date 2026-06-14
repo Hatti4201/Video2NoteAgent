@@ -1,0 +1,16 @@
+services:
+  video-note-agent:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./output:/app/output
+
+  telegram-bot:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./output:/app/output
+    command: ["telegram"]
+    restart: unless-stopped
