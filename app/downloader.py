@@ -63,7 +63,12 @@ def get_video_info(url: str) -> dict:
         raise VideoNoteError("Invalid YouTube URL. Provide a valid youtube.com/watch or youtu.be URL.")
 
     try:
-        with YoutubeDL(_youtube_dl_options({"skip_download": True})) as ydl:
+        with YoutubeDL(
+            _youtube_dl_options({
+                "skip_download": True,
+                "ignore_no_formats_error": True,
+            })
+        ) as ydl:
             return ydl.extract_info(url, download=False)
     except DownloadError as exc:
         raise VideoNoteError(f"Could not read video information: {exc}") from exc
