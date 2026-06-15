@@ -114,7 +114,10 @@ class FeishuAdapter:
         for offset in range(0, len(blocks), 50):
             self._request_json(
                 f"/docx/v1/documents/{document_id}/blocks/{document_id}/children",
-                payload={"children": blocks[offset : offset + 50]},
+                payload={
+                    "index": offset,
+                    "children": blocks[offset : offset + 50],
+                },
                 method="POST",
                 token=token,
             )
@@ -265,15 +268,15 @@ class FeishuAdapter:
                 data = json.loads(response.read().decode("utf-8"))
         except HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
-            raise AdapterError(f"Feishu API failed with HTTP {exc.code}: {detail}") from exc
+            raise AdapterError(f"Feishu API failed on {path} with HTTP {exc.code}: {detail}") from exc
         except (URLError, TimeoutError, socket.timeout) as exc:
-            raise AdapterError(f"Feishu is unavailable: {exc}") from exc
+            raise AdapterError(f"Feishu is unavailable on {path}: {exc}") from exc
         except json.JSONDecodeError as exc:
-            raise AdapterError("Feishu returned invalid JSON.") from exc
+            raise AdapterError(f"Feishu returned invalid JSON on {path}.") from exc
 
         code = data.get("code", 0)
         if code != 0:
             message = data.get("msg") or data.get("message") or "unknown error"
-            raise AdapterError(f"Feishu API failed with code {code}: {message}")
+            raise AdapterError(f"Feishu API failed on {path} with code {code}: {message}")
 
         return data

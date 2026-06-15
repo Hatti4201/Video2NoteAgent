@@ -339,6 +339,7 @@ def test_feishu_adapter_creates_document_and_appends_blocks(monkeypatch, tmp_pat
     assert create_request.headers["Authorization"] == "Bearer tenant-token"
     assert create_payload == {"folder_token": "folder-token", "title": "Sample Video"}
     assert append_request.headers["Authorization"] == "Bearer tenant-token"
+    assert append_payload["index"] == 0
     assert append_payload["children"][0]["block_type"] == 3
     assert append_payload["children"][0]["text"]["elements"][0]["text_run"]["content"] == "Sample Video"
     assert any(child["block_type"] == 4 for child in append_payload["children"])
