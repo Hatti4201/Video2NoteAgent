@@ -5,7 +5,7 @@ services:
       - .env
     volumes:
       - ./output:/app/output
-      - ./secrets:/app/secrets:ro
+      - ./secrets:/app/secrets
 
   telegram-bot:
     build: .
@@ -13,6 +13,6 @@ services:
       - .env
     volumes:
       - ./output:/app/output
-      - ./secrets:/app/secrets:ro
+      - ./secrets:/app/secrets
     command: ["telegram"]
     restart: unless-stopped

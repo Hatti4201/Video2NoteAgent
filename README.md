@@ -159,7 +159,7 @@ server, and set:
 YOUTUBE_COOKIES_FILE=/app/secrets/youtube_cookies.txt
 ```
 
-The `secrets/` directory is ignored by Git and mounted read-only in Docker.
+The `secrets/` directory is ignored by Git and mounted into Docker for runtime use.
 Do not commit or print cookie files.
 
 Future local video processing through Docker will require an input volume mount. A future compose setup may use:
