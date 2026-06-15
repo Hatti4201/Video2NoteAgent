@@ -139,6 +139,9 @@ For Docker, copy the example environment file and fill in local values:
 cp .env.example .env
 ```
 
+The Docker image includes `ffmpeg` and `nodejs`. `nodejs` is needed by
+`yt-dlp` for some YouTube challenge handling on cloud hosts.
+
 Run one-shot processing:
 
 ```bash
