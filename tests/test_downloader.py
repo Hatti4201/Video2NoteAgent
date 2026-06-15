@@ -43,6 +43,7 @@ def test_get_video_info_uses_configured_youtube_cookies(monkeypatch, tmp_path):
 
     assert info["title"] == "Cookie Video"
     assert captured_options["cookiefile"] == str(cookies_file)
+    assert captured_options["js_runtimes"] == {"node": {}}
     assert captured_options["skip_download"] is True
 
 

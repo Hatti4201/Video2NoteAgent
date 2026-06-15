@@ -41,6 +41,7 @@ def _youtube_dl_options(extra_options: dict | None = None) -> dict:
     options = {
         "quiet": True,
         "noplaylist": True,
+        "js_runtimes": {"node": {}},
     }
     if extra_options:
         options.update(extra_options)
