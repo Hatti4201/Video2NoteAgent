@@ -114,6 +114,7 @@ export LLM_MODEL=qwen-plus
 export QWEN_API_KEY=<your_qwen_api_key>
 export QWEN_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
 export YOUTUBE_COOKIES_FILE=/app/secrets/youtube_cookies.txt
+export YOUTUBE_PROXY=<optional_http_or_socks_proxy_url>
 export NOTION_TOKEN=<your_notion_integration_token>
 export NOTION_DATABASE_ID=<target_notion_database_id>
 export NOTION_PARENT_PAGE_ID=<target_parent_page_id>
@@ -162,8 +163,20 @@ server, and set:
 YOUTUBE_COOKIES_FILE=/app/secrets/youtube_cookies.txt
 ```
 
+If cloud-hosted YouTube audio download is still blocked, configure a proxy:
+
+```bash
+YOUTUBE_PROXY=socks5://user:password@host:port
+```
+
+HTTP proxies are also supported:
+
+```bash
+YOUTUBE_PROXY=http://user:password@host:port
+```
+
 The `secrets/` directory is ignored by Git and mounted into Docker for runtime use.
-Do not commit or print cookie files.
+Do not commit or print cookie files, proxy URLs, or proxy credentials.
 
 Future local video processing through Docker will require an input volume mount. A future compose setup may use:
 

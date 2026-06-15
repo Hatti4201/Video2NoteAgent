@@ -37,6 +37,7 @@ def test_get_video_info_uses_configured_youtube_cookies(monkeypatch, tmp_path):
             return {"title": "Cookie Video", "webpage_url": url}
 
     monkeypatch.setenv("YOUTUBE_COOKIES_FILE", str(cookies_file))
+    monkeypatch.setenv("YOUTUBE_PROXY", "socks5://proxy.example:1080")
     monkeypatch.setattr(downloader, "YoutubeDL", FakeYoutubeDL)
 
     info = downloader.get_video_info("https://www.youtube.com/watch?v=example")
@@ -45,6 +46,7 @@ def test_get_video_info_uses_configured_youtube_cookies(monkeypatch, tmp_path):
     assert captured_options["cookiefile"] == str(cookies_file)
     assert captured_options["js_runtimes"] == {"node": {}}
     assert captured_options["ignore_no_formats_error"] is True
+    assert captured_options["proxy"] == "socks5://proxy.example:1080"
     assert captured_options["skip_download"] is True
 
 

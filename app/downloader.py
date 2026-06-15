@@ -13,6 +13,7 @@ from app.utils import VideoNoteError, ensure_output_dir
 SUPPORTED_LANGUAGE_PREFIXES = ("en", "zh")
 NO_SUBTITLES_MESSAGE = "No English or Chinese subtitles were found for this video."
 YOUTUBE_COOKIES_FILE_ENV = "YOUTUBE_COOKIES_FILE"
+YOUTUBE_PROXY_ENV = "YOUTUBE_PROXY"
 
 
 class NoSubtitleError(VideoNoteError):
@@ -54,6 +55,10 @@ def _youtube_dl_options(extra_options: dict | None = None) -> dict:
                 f"{YOUTUBE_COOKIES_FILE_ENV} is set but the file does not exist: {cookies_file}"
             )
         options["cookiefile"] = str(cookies_path)
+
+    proxy = os.environ.get(YOUTUBE_PROXY_ENV, "").strip()
+    if proxy:
+        options["proxy"] = proxy
 
     return options
 
