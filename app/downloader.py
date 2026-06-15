@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
@@ -11,6 +12,7 @@ from app.utils import VideoNoteError, ensure_output_dir
 
 SUPPORTED_LANGUAGE_PREFIXES = ("en", "zh")
 NO_SUBTITLES_MESSAGE = "No English or Chinese subtitles were found for this video."
+YOUTUBE_COOKIES_FILE_ENV = "YOUTUBE_COOKIES_FILE"
 
 
 class NoSubtitleError(VideoNoteError):
@@ -35,12 +37,32 @@ def validate_youtube_url(url: str) -> bool:
     return False
 
 
+def _youtube_dl_options(extra_options: dict | None = None) -> dict:
+    options = {
+        "quiet": True,
+        "noplaylist": True,
+    }
+    if extra_options:
+        options.update(extra_options)
+
+    cookies_file = os.environ.get(YOUTUBE_COOKIES_FILE_ENV, "").strip()
+    if cookies_file:
+        cookies_path = Path(cookies_file)
+        if not cookies_path.exists():
+            raise VideoNoteError(
+                f"{YOUTUBE_COOKIES_FILE_ENV} is set but the file does not exist: {cookies_file}"
+            )
+        options["cookiefile"] = str(cookies_path)
+
+    return options
+
+
 def get_video_info(url: str) -> dict:
     if not validate_youtube_url(url):
         raise VideoNoteError("Invalid YouTube URL. Provide a valid youtube.com/watch or youtu.be URL.")
 
     try:
-        with YoutubeDL({"quiet": True, "skip_download": True, "noplaylist": True}) as ydl:
+        with YoutubeDL(_youtube_dl_options({"skip_download": True})) as ydl:
             return ydl.extract_info(url, download=False)
     except DownloadError as exc:
         raise VideoNoteError(f"Could not read video information: {exc}") from exc
@@ -116,11 +138,9 @@ def download_youtube_audio(url: str, output_dir: Path) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
     output_template = str(output_dir / "youtube_audio.%(ext)s")
 
-    options = {
+    options = _youtube_dl_options({
         "format": "bestaudio/best",
         "outtmpl": output_template,
-        "noplaylist": True,
-        "quiet": True,
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
@@ -128,7 +148,7 @@ def download_youtube_audio(url: str, output_dir: Path) -> dict:
                 "preferredquality": "64",
             }
         ],
-    }
+    })
 
     try:
         with YoutubeDL(options) as ydl:

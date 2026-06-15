@@ -113,6 +113,7 @@ export LLM_PROVIDER=qwen
 export LLM_MODEL=qwen-plus
 export QWEN_API_KEY=<your_qwen_api_key>
 export QWEN_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+export YOUTUBE_COOKIES_FILE=/app/secrets/youtube_cookies.txt
 export NOTION_TOKEN=<your_notion_integration_token>
 export NOTION_DATABASE_ID=<target_notion_database_id>
 export NOTION_PARENT_PAGE_ID=<target_parent_page_id>
@@ -149,6 +150,17 @@ Run Telegram polling:
 ```bash
 docker compose up telegram-bot
 ```
+
+When running on cloud hosts, YouTube may require authenticated cookies. Export a
+YouTube cookies file locally, place it under `secrets/youtube_cookies.txt` on the
+server, and set:
+
+```bash
+YOUTUBE_COOKIES_FILE=/app/secrets/youtube_cookies.txt
+```
+
+The `secrets/` directory is ignored by Git and mounted read-only in Docker.
+Do not commit or print cookie files.
 
 Future local video processing through Docker will require an input volume mount. A future compose setup may use:
 
