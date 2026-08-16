@@ -117,7 +117,7 @@ def test_qwen_generation_uses_openai_compatible_chat_completions(monkeypatch):
     assert response == "Hello from Qwen."
     assert request.full_url == "https://qwen.example/compatible-mode/v1/chat/completions"
     assert request.headers["Authorization"] == "Bearer qwen-key"
-    assert timeout == 120
+    assert timeout == 300
     assert payload["model"] == "qwen-plus"
     assert payload["messages"] == [{"role": "user", "content": "Say hello."}]
     assert payload["stream"] is False
@@ -153,11 +153,34 @@ def test_generate_llm_documents_uses_selected_qwen_provider(monkeypatch):
     assert "# Executive Summary" in prompts[1][0]
 
 
+def test_generate_reformatted_transcript_uses_selected_qwen_provider(monkeypatch):
+    prompts = []
+    monkeypatch.setenv("LLM_PROVIDER", "qwen")
+    monkeypatch.setenv("LLM_MODEL", "qwen-plus")
+    monkeypatch.setenv("QWEN_API_KEY", "qwen-key")
+    monkeypatch.setenv("QWEN_BASE_URL", "https://qwen.example/compatible-mode/v1")
+
+    def fake_generate(prompt, config=None):
+        prompts.append((prompt, config))
+        return "generated transcript"
+
+    monkeypatch.setattr(llm, "generate_provider_text", fake_generate)
+
+    result = llm.generate_reformatted_transcript("Title", "Transcript")
+
+    assert result == "generated transcript"
+    assert prompts[0][1].provider == "qwen"
+    assert "# Edited Transcript" in prompts[0][0]
+    assert "# Outline" in prompts[0][0]
+    assert "# Key Takeaways" in prompts[0][0]
+
+
 def test_llm_prompts_use_chinese_headings_for_chinese_transcript():
     transcript = "这个视频解释如何整理笔记。你应该抓住主要观点。避免复制每一句话。"
 
     cleaned_prompt = llm.cleaned_content_prompt("中文标题", transcript)
     notes_prompt = llm.notes_outline_prompt("中文标题", transcript)
+    reformatted_prompt = llm.reformatted_transcript_prompt("中文标题", transcript)
 
     assert "primary language is Chinese" in cleaned_prompt
     assert "Write the entire output in Chinese" in cleaned_prompt
@@ -166,3 +189,6 @@ def test_llm_prompts_use_chinese_headings_for_chinese_transcript():
     assert "# 关键要点" in notes_prompt
     assert "# 结构化大纲" in notes_prompt
     assert "# 行动项" in notes_prompt
+    assert "# 编辑后文本" in reformatted_prompt
+    assert "# 大纲" in reformatted_prompt
+    assert "# 关键要点" in reformatted_prompt

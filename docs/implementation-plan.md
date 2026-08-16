@@ -6,7 +6,8 @@ This document defines the product roadmap for Video Note Agent.
 
 The roadmap is local-first but cloud-ready.
 
-The current implementation must keep working locally. Cloud deployment, cloud task orchestration, and ASR APIs are future architecture targets and are not implemented in this phase.
+The current implementation must keep working locally. Additional ASR providers, cloud
+deployment, and cloud task orchestration remain future targets.
 
 ---
 
@@ -146,9 +147,9 @@ Process transcript text into derived knowledge artifacts.
 
 ## Goal
 
-Define a replaceable transcription layer for future source and ASR expansion.
+Define a replaceable transcription layer for source and ASR expansion.
 
-## Future Local Video Sources
+## Local Video Sources
 
 - `.mp4`
 - `.mov`
@@ -157,6 +158,8 @@ Define a replaceable transcription layer for future source and ASR expansion.
 ## ASR Providers
 
 - Doubao Speech ASR: implemented for explicit audio URLs and TOS-backed local audio files
+- Local faster-whisper: implemented for local video files
+- Local Whisper API: implemented for local video and audio paths
 - Tencent ASR
 - Alibaba ASR
 - Deepgram
@@ -213,13 +216,14 @@ TOS object key format:
 audio/{yyyy-mm-dd}/{uuid}.{ext}
 ```
 
-Planned environment variables:
+Implemented-provider environment variables:
 
 ```text
 TRANSCRIPTION_PROVIDER=doubao
-DOUBAO_ASR_APP_ID=2614672586
+DOUBAO_ASR_APP_ID=
 DOUBAO_ASR_ACCESS_TOKEN=
-DOUBAO_ASR_RESOURCE_ID=volc.seedasr.auc
+VALID_ASR_RESOURCE_ID=
+DOUBAO_ASR_RESOURCE_ID=volc.bigasr.auc
 DOUBAO_ASR_SUBMIT_URL=https://openspeech.bytedance.com/api/v3/auc/bigmodel/submit
 DOUBAO_ASR_QUERY_URL=https://openspeech.bytedance.com/api/v3/auc/bigmodel/query
 DOUBAO_ASR_LANGUAGE=zh-CN
@@ -228,9 +232,13 @@ DOUBAO_ASR_ENABLE_ITN=true
 DOUBAO_ASR_ENABLE_PUNC=true
 DOUBAO_ASR_ENABLE_DDC=true
 DOUBAO_ASR_SHOW_UTTERANCES=true
+LOCAL_WHISPER_BASE_URL=http://127.0.0.1:8001
+LOCAL_WHISPER_TRANSCRIBE_PATH=/transcribe/path
+LOCAL_WHISPER_MODEL=whisper
+LOCAL_WHISPER_TIMEOUT_SECONDS=600
 VOLCENGINE_ACCESS_KEY_ID=
 VOLCENGINE_SECRET_ACCESS_KEY=
-TOS_BUCKET=nika-mnemo
+TOS_BUCKET=
 TOS_REGION=cn-beijing
 TOS_ENDPOINT=tos-cn-beijing.volces.com
 ```
@@ -241,7 +249,11 @@ TOS_ENDPOINT=tos-cn-beijing.volces.com
 - [x] Doubao Speech explicit audio URL path implemented
 - [x] Doubao Speech TOS temporary audio upload path implemented
 - [x] YouTube no-subtitle fallback to temporary audio plus Doubao Speech ASR
-- [ ] Local video extraction into ASR is not yet wired into the main pipeline
+- [x] Local video through faster-whisper is wired into the main pipeline
+- [x] Local video through the configured local Whisper API is wired into the main pipeline
+- [x] Optional batch helper connects local video to Doubao/TOS
+- [ ] Doubao local-video selection is not yet wired into `main.py`
+- [ ] Additional ASR providers and a shared provider contract remain
 
 ---
 
@@ -335,8 +347,10 @@ When `FEISHU_BITABLE_APP_TOKEN` and `FEISHU_BITABLE_TABLE_ID` are configured, Fe
 
 ## Status
 
-- [ ] Planned architecture
-- [x] Some adapters exist in the current implementation
+- [x] Adapter architecture implemented
+- [x] Local Markdown, Notion, Obsidian, and Feishu adapters implemented
+- [x] Feishu structured blocks and optional Bitable records implemented
+- [ ] Google Docs adapter remains
 
 ---
 
@@ -368,6 +382,7 @@ Allow the system to run as a cloud-ready workflow while preserving local-first b
 
 # Current Implementation Notes
 
-The implementation currently includes capabilities that were added during earlier iteration, including configurable LLM processing, optional output adapters, Telegram input, and Docker packaging.
+The implementation also includes configurable LLM processing, optional output adapters,
+Telegram input, Docker packaging, and local-video batch tools.
 
 These capabilities should be preserved, but future planning should use the six-phase roadmap above.

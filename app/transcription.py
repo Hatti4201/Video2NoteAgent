@@ -14,7 +14,11 @@ from app.storage.tos import TosConfig, delete_audio_from_tos, upload_audio_to_to
 from app.utils import VideoNoteError
 
 
-DEFAULT_DOUBAO_RESOURCE_ID = "volc.seedasr.auc"
+# Legacy seed-style resource IDs (no longer accepted by the API).
+DOUBAO_TRIAL_RESOURCE_ID = "Speech_Recognition_Seed_AUC2000000796097344354"
+DOUBAO_PAID_RESOURCE_ID = "Speech_Recognition_Seed_AUC2000000795911642498"
+# Current resource ID required by the Volcengine BigASR API.
+DEFAULT_DOUBAO_RESOURCE_ID = "volc.bigasr.auc"
 DEFAULT_DOUBAO_SUBMIT_URL = "https://openspeech.bytedance.com/api/v3/auc/bigmodel/submit"
 DEFAULT_DOUBAO_QUERY_URL = "https://openspeech.bytedance.com/api/v3/auc/bigmodel/query"
 DEFAULT_DOUBAO_LANGUAGE = "zh-CN"
@@ -22,6 +26,12 @@ DEFAULT_DOUBAO_AUDIO_FORMAT = "mp3"
 DEFAULT_TIMEOUT_SECONDS = 30
 DEFAULT_POLL_INTERVAL_SECONDS = 2
 DEFAULT_MAX_QUERY_ATTEMPTS = 150
+DEFAULT_LOCAL_WHISPER_BASE_URL = "http://127.0.0.1:8001"
+DEFAULT_LOCAL_WHISPER_TRANSCRIBE_PATH = "/transcribe/path"
+DEFAULT_LOCAL_WHISPER_MODEL = "whisper"
+DEFAULT_LOCAL_WHISPER_LANGUAGE = ""
+DEFAULT_LOCAL_WHISPER_TEMPERATURE = "0"
+DEFAULT_LOCAL_WHISPER_TIMEOUT_SECONDS = 600
 
 DOUBAO_STATUS_SUCCESS = "20000000"
 DOUBAO_STATUS_PROCESSING = {"20000001", "20000002"}
@@ -45,6 +55,17 @@ class DoubaoASRConfig:
 VolcengineASRConfig = DoubaoASRConfig
 
 
+@dataclass(frozen=True)
+class LocalWhisperAPIConfig:
+    base_url: str
+    transcribe_path: str
+    model: str
+    language: str
+    temperature: str
+    timeout_seconds: int
+    api_key: str | None
+
+
 def _env_bool(name: str, default: bool) -> bool:
     value = os.environ.get(name)
     if value is None:
@@ -56,9 +77,53 @@ def get_transcription_provider() -> str:
     return os.environ.get("TRANSCRIPTION_PROVIDER", "").strip().lower()
 
 
+def get_local_whisper_api_config() -> LocalWhisperAPIConfig:
+    base_url = os.environ.get("LOCAL_WHISPER_BASE_URL", DEFAULT_LOCAL_WHISPER_BASE_URL).strip().rstrip("/")
+    transcribe_path = os.environ.get(
+        "LOCAL_WHISPER_TRANSCRIBE_PATH",
+        DEFAULT_LOCAL_WHISPER_TRANSCRIBE_PATH,
+    ).strip()
+    if not transcribe_path.startswith("/"):
+        transcribe_path = "/" + transcribe_path
+
+    model = os.environ.get("LOCAL_WHISPER_MODEL", DEFAULT_LOCAL_WHISPER_MODEL).strip()
+    language = os.environ.get("LOCAL_WHISPER_LANGUAGE", DEFAULT_LOCAL_WHISPER_LANGUAGE).strip()
+    temperature = os.environ.get("LOCAL_WHISPER_TEMPERATURE", DEFAULT_LOCAL_WHISPER_TEMPERATURE).strip()
+    timeout_seconds_value = os.environ.get(
+        "LOCAL_WHISPER_TIMEOUT_SECONDS",
+        str(DEFAULT_LOCAL_WHISPER_TIMEOUT_SECONDS),
+    ).strip()
+    api_key = os.environ.get("LOCAL_WHISPER_API_KEY", "").strip() or None
+
+    if not base_url:
+        raise VideoNoteError("LOCAL_WHISPER_BASE_URL is required for the local Whisper API provider.")
+    if not model:
+        raise VideoNoteError("LOCAL_WHISPER_MODEL is required for the local Whisper API provider.")
+
+    try:
+        timeout_seconds = int(timeout_seconds_value)
+    except ValueError as exc:
+        raise VideoNoteError("LOCAL_WHISPER_TIMEOUT_SECONDS must be an integer.") from exc
+
+    return LocalWhisperAPIConfig(
+        base_url=base_url,
+        transcribe_path=transcribe_path,
+        model=model,
+        language=language,
+        temperature=temperature,
+        timeout_seconds=timeout_seconds,
+        api_key=api_key,
+    )
+
+
 def get_doubao_asr_config() -> DoubaoASRConfig:
     app_id = os.environ.get("DOUBAO_ASR_APP_ID", "").strip()
     access_token = os.environ.get("DOUBAO_ASR_ACCESS_TOKEN", "").strip()
+    resource_id = (
+        os.environ.get("VALID_ASR_RESOURCE_ID", "").strip()
+        or os.environ.get("DOUBAO_ASR_RESOURCE_ID", "").strip()
+        or DEFAULT_DOUBAO_RESOURCE_ID
+    )
 
     if not app_id or not access_token:
         raise VideoNoteError(
@@ -69,7 +134,7 @@ def get_doubao_asr_config() -> DoubaoASRConfig:
     return DoubaoASRConfig(
         app_id=app_id,
         access_token=access_token,
-        resource_id=os.environ.get("DOUBAO_ASR_RESOURCE_ID", DEFAULT_DOUBAO_RESOURCE_ID),
+        resource_id=resource_id,
         submit_url=os.environ.get("DOUBAO_ASR_SUBMIT_URL", DEFAULT_DOUBAO_SUBMIT_URL),
         query_url=os.environ.get("DOUBAO_ASR_QUERY_URL", DEFAULT_DOUBAO_QUERY_URL),
         language=os.environ.get("DOUBAO_ASR_LANGUAGE", DEFAULT_DOUBAO_LANGUAGE),
@@ -130,6 +195,52 @@ def transcribe_audio_file_via_tos(
             delete_audio_from_tos(upload.key, tos_config)
         except VideoNoteError as exc:
             print(f"Warning: {exc}", file=sys.stderr)
+
+
+def transcribe_audio_file_via_local_whisper_api(
+    file_path: str | Path,
+    config: LocalWhisperAPIConfig | None = None,
+) -> str:
+    config = config or get_local_whisper_api_config()
+    payload = {
+        "file_path": str(file_path),
+        "output_format": "json",
+    }
+    if config.language:
+        payload["language"] = config.language
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    if config.api_key:
+        headers["Authorization"] = f"Bearer {config.api_key}"
+
+    request = Request(
+        f"{config.base_url}{config.transcribe_path}",
+        data=json.dumps(payload).encode("utf-8"),
+        method="POST",
+        headers=headers,
+    )
+
+    try:
+        with urlopen(request, timeout=config.timeout_seconds) as response:
+            raw = response.read().decode("utf-8")
+    except HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise VideoNoteError(f"Local Whisper API request failed with HTTP {exc.code}: {detail}") from exc
+    except (URLError, TimeoutError, socket.timeout) as exc:
+        raise VideoNoteError(f"Local Whisper API is unavailable: {exc}") from exc
+
+    try:
+        result = json.loads(raw or "{}")
+    except json.JSONDecodeError as exc:
+        raise VideoNoteError("Local Whisper API returned invalid JSON.") from exc
+
+    text = str(result.get("text") or result.get("transcript") or "").strip()
+    if not text:
+        raise VideoNoteError("Local Whisper API returned an empty transcript.")
+
+    return text
 
 
 def submit_doubao_asr_task(

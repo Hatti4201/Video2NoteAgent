@@ -3,7 +3,12 @@ import json
 import pytest
 
 from app import transcription
-from app.transcription import DoubaoASRConfig
+from app.transcription import (
+    DOUBAO_PAID_RESOURCE_ID,
+    DOUBAO_TRIAL_RESOURCE_ID,
+    DoubaoASRConfig,
+    LocalWhisperAPIConfig,
+)
 from app.utils import VideoNoteError
 
 
@@ -28,7 +33,7 @@ def make_config() -> DoubaoASRConfig:
     return DoubaoASRConfig(
         app_id="app-id",
         access_token="access-token",
-        resource_id="volc.seedasr.auc",
+        resource_id=DOUBAO_PAID_RESOURCE_ID,
         submit_url="https://asr.example/submit",
         query_url="https://asr.example/query",
         language="zh-CN",
@@ -53,13 +58,25 @@ def test_get_doubao_asr_config_requires_app_id_and_access_token(monkeypatch):
 def test_get_doubao_asr_config_reads_doubao_env(monkeypatch):
     monkeypatch.setenv("DOUBAO_ASR_APP_ID", "2614672586")
     monkeypatch.setenv("DOUBAO_ASR_ACCESS_TOKEN", "access-token")
-    monkeypatch.setenv("DOUBAO_ASR_RESOURCE_ID", "volc.seedasr.auc")
+    monkeypatch.delenv("VALID_ASR_RESOURCE_ID", raising=False)
+    monkeypatch.setenv("DOUBAO_ASR_RESOURCE_ID", DOUBAO_PAID_RESOURCE_ID)
 
     config = transcription.get_doubao_asr_config()
 
     assert config.app_id == "2614672586"
     assert config.access_token == "access-token"
-    assert config.resource_id == "volc.seedasr.auc"
+    assert config.resource_id == DOUBAO_PAID_RESOURCE_ID
+
+
+def test_get_doubao_asr_config_prefers_valid_asr_resource_id(monkeypatch):
+    monkeypatch.setenv("DOUBAO_ASR_APP_ID", "2614672586")
+    monkeypatch.setenv("DOUBAO_ASR_ACCESS_TOKEN", "access-token")
+    monkeypatch.setenv("VALID_ASR_RESOURCE_ID", DOUBAO_PAID_RESOURCE_ID)
+    monkeypatch.setenv("DOUBAO_ASR_RESOURCE_ID", DOUBAO_TRIAL_RESOURCE_ID)
+
+    config = transcription.get_doubao_asr_config()
+
+    assert config.resource_id == DOUBAO_PAID_RESOURCE_ID
 
 
 def test_transcribe_audio_url_submits_and_queries_with_old_console_headers(monkeypatch):
@@ -104,7 +121,7 @@ def test_transcribe_audio_url_submits_and_queries_with_old_console_headers(monke
     assert transcript == "这是识别结果。"
     assert submit_request.headers["X-api-app-key"] == "app-id"
     assert submit_request.headers["X-api-access-key"] == "access-token"
-    assert submit_request.headers["X-api-resource-id"] == "volc.seedasr.auc"
+    assert submit_request.headers["X-api-resource-id"] == DOUBAO_PAID_RESOURCE_ID
     assert submit_request.headers["X-api-request-id"] == "task-id"
     assert submit_request.headers["X-api-sequence"] == "-1"
     assert "X-api-key" not in submit_request.headers
@@ -214,6 +231,76 @@ def test_query_failure_reports_status_message_and_logid(monkeypatch):
             poll_interval_seconds=0,
             max_query_attempts=1,
         )
+
+
+def test_get_local_whisper_api_config_uses_path_api_defaults(monkeypatch):
+    monkeypatch.delenv("LOCAL_WHISPER_BASE_URL", raising=False)
+    monkeypatch.delenv("LOCAL_WHISPER_TRANSCRIBE_PATH", raising=False)
+
+    config = transcription.get_local_whisper_api_config()
+
+    assert config.base_url == "http://127.0.0.1:8001"
+    assert config.transcribe_path == "/transcribe/path"
+
+
+def test_get_local_whisper_api_config_reads_env(monkeypatch):
+    monkeypatch.setenv("LOCAL_WHISPER_BASE_URL", "http://127.0.0.1:9000")
+    monkeypatch.setenv("LOCAL_WHISPER_TRANSCRIBE_PATH", "v1/audio/transcriptions")
+    monkeypatch.setenv("LOCAL_WHISPER_MODEL", "whisper-large-v3")
+    monkeypatch.setenv("LOCAL_WHISPER_LANGUAGE", "zh")
+    monkeypatch.setenv("LOCAL_WHISPER_TEMPERATURE", "0")
+    monkeypatch.setenv("LOCAL_WHISPER_API_KEY", "local-key")
+
+    config = transcription.get_local_whisper_api_config()
+
+    assert config == LocalWhisperAPIConfig(
+        base_url="http://127.0.0.1:9000",
+        transcribe_path="/v1/audio/transcriptions",
+        model="whisper-large-v3",
+        language="zh",
+        temperature="0",
+        timeout_seconds=600,
+        api_key="local-key",
+    )
+
+
+def test_transcribe_audio_file_via_local_whisper_api_posts_json_path(monkeypatch, tmp_path):
+    audio_path = tmp_path / "sample.mp3"
+    audio_path.write_bytes(b"fake-audio")
+    requests = []
+
+    def fake_urlopen(request, timeout):
+        requests.append((request, timeout))
+        return FakeResponse({}, {"text": "本地识别结果"})
+
+    monkeypatch.setattr(transcription, "urlopen", fake_urlopen)
+
+    result = transcription.transcribe_audio_file_via_local_whisper_api(
+        audio_path,
+        config=LocalWhisperAPIConfig(
+            base_url="http://127.0.0.1:9000",
+            transcribe_path="/v1/audio/transcriptions",
+            model="whisper-large-v3",
+            language="zh",
+            temperature="0",
+            timeout_seconds=600,
+            api_key="local-key",
+        ),
+    )
+
+    request, timeout = requests[0]
+    body = json.loads(request.data.decode("utf-8"))
+
+    assert result == "本地识别结果"
+    assert timeout == 600
+    assert request.full_url == "http://127.0.0.1:9000/v1/audio/transcriptions"
+    assert any(value == "application/json" for key, value in request.headers.items() if key.lower() == "content-type")
+    assert "Authorization" in request.headers
+    assert body == {
+        "file_path": str(audio_path),
+        "language": "zh",
+        "output_format": "json",
+    }
 
 
 def test_transcribe_audio_file_via_tos_deletes_object_without_breaking_result(monkeypatch, tmp_path):

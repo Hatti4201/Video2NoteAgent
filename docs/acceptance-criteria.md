@@ -161,34 +161,39 @@ Expected:
 
 Status:
 
-- [ ] Planned
+- [ ] In progress: implemented providers pass unit tests; additional providers remain
 
-## AC-11 Future Local Video Support
+## AC-11 Local Video Support
 
-Future local video inputs:
+Supported local video inputs:
 
 - `.mp4`
 - `.mov`
 - `.mkv`
 
-Expected when implemented:
+Current behavior:
 
 - Local video input produces transcript text.
 - Transcript text enters the same downstream pipeline as YouTube subtitles.
+- Local video uses faster-whisper by default or the configured local Whisper API.
 
 ## AC-12 ASR Providers
 
-ASR provider targets:
+Implemented ASR paths:
 
 - Doubao Speech ASR: explicit audio URL and TOS-backed local audio helper implemented
+- Local Whisper API: local audio path transcription implemented
+
+Remaining provider targets:
+
 - Tencent ASR
 - Alibaba ASR
 - Deepgram
 - AWS Transcribe
 
-Expected when implemented:
+Expected for each implemented provider:
 
-- Each provider returns transcript text through a shared interface.
+- Each implemented provider returns transcript text to the shared downstream pipeline.
 - Provider failures return readable errors.
 - Provider credentials are explicit environment configuration.
 
@@ -202,7 +207,8 @@ Doubao Speech TOS-backed ASR expected behavior:
 - Doubao Speech ASR uses old-console AppId and Access Token.
 - Doubao Speech ASR does not use IAM AK/SK, `open.volcengineapi.com`, `Action=SubmitRecognitionTask`, `Version=2023-08-01`, or HMAC-SHA256 signing.
 
-Local video extraction into ASR is not implemented yet.
+The optional batch helper connects local video to Doubao/TOS. Doubao is not yet selectable
+for local video through `main.py`.
 
 ---
 
@@ -210,8 +216,8 @@ Local video extraction into ASR is not implemented yet.
 
 Status:
 
-- [ ] Planned architecture
-- [x] Some adapters exist in current implementation
+- [x] Adapter architecture implemented for current destinations
+- [ ] Google Docs remains
 
 ## AC-13 Optional Publishing
 
@@ -229,19 +235,19 @@ Expected:
 
 ## AC-14 Supported Destination Targets
 
-Planned destinations:
+Destination status:
 
-- Local Markdown
-- Feishu Docs
-- Notion
-- Google Docs
-- Obsidian
+- Local Markdown: implemented
+- Feishu Docs: implemented
+- Notion: implemented
+- Google Docs: planned
+- Obsidian: implemented
 
 ## AC-15 Feishu Structured Blocks
 
 Feishu should not receive raw Markdown.
 
-Expected when implemented:
+Implemented behavior:
 
 - Generated notes are converted into Feishu document blocks:
   - Heading 1

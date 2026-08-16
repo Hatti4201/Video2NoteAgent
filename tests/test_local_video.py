@@ -5,6 +5,7 @@ import pytest
 from app.local_video import (
     get_local_video_info,
     is_supported_video_path,
+    transcribe_local_video,
     validate_local_video_path,
 )
 from app.utils import VideoNoteError
@@ -56,3 +57,25 @@ def test_get_local_video_info_uses_filename_metadata(tmp_path):
         "tags": [],
         "processing_method": "local_whisper",
     }
+
+
+def test_transcribe_local_video_uses_local_whisper_api_when_configured(monkeypatch, tmp_path):
+    video_path = tmp_path / "lesson.mp4"
+    video_path.write_bytes(b"fake video")
+    calls = []
+
+    monkeypatch.setenv("TRANSCRIPTION_PROVIDER", "local_whisper_api")
+    monkeypatch.setattr(
+        "app.local_video.transcribe_audio_file_via_local_whisper_api",
+        lambda audio_path, config=None: calls.append((audio_path.name, config.model)) or "本地转写结果",
+    )
+    monkeypatch.setattr(
+        "app.local_video.subprocess.run",
+        lambda command, check, stdout, stderr, text: calls.append(command) or None,
+    )
+
+    result = transcribe_local_video(video_path)
+
+    assert result == "本地转写结果"
+    assert calls[0][-1].endswith("audio.mp3")
+    assert calls[1] == ("audio.mp3", "whisper")

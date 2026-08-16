@@ -71,18 +71,20 @@ Status:
 
 Status:
 
-- [ ] In progress
+- [ ] In progress: implemented providers work; additional providers remain
 
-## Future Local Video Inputs
+## Local Video Inputs
 
-- [ ] `.mp4`
-- [ ] `.mov`
-- [ ] `.mkv`
+- [x] `.mp4`
+- [x] `.mov`
+- [x] `.mkv`
 
 ## Future ASR Providers
 
 - [x] Doubao Speech explicit audio URL transcription
 - [x] Doubao Speech TOS-backed local audio transcription helper
+- [x] Local faster-whisper transcription
+- [x] Local Whisper API transcription
 - [ ] Tencent ASR
 - [ ] Alibaba ASR
 - [ ] Deepgram
@@ -100,10 +102,12 @@ Status:
 - [x] Ensure Doubao Speech/TOS failures are readable
 - [ ] Define shared transcription provider contract
 - [ ] Ensure every provider returns transcript text
-- [ ] Keep downstream note pipeline provider-independent
-- [ ] Document required provider environment variables
+- [x] Keep downstream note pipeline provider-independent
+- [x] Document required environment variables for implemented providers
 
-Local video extraction into the ASR flow is not implemented yet.
+`main.py` processes local video through faster-whisper or the configured local Whisper API.
+The optional batch helper can process local video through Doubao/TOS, but Doubao is not yet
+selectable for local video through `main.py`.
 
 ---
 
@@ -111,8 +115,8 @@ Local video extraction into the ASR flow is not implemented yet.
 
 Status:
 
-- [ ] Planned architecture
-- [x] Some adapters exist in current implementation
+- [x] Adapter architecture implemented for current destinations
+- [ ] Google Docs remains
 
 ## Destinations
 
@@ -133,16 +137,16 @@ Status:
 - [x] Publish Feishu Bitable record when configured
 - [x] Publish to Obsidian when configured
 - [ ] Add Google Docs adapter
-- [ ] Convert Feishu output to structured document blocks instead of raw Markdown
+- [x] Convert Feishu output to structured document blocks instead of raw Markdown
 
 ## Feishu Structured Block Tasks
 
-- [ ] Convert Heading 1
-- [ ] Convert Heading 2
-- [ ] Convert Heading 3
-- [ ] Convert Paragraph
-- [ ] Convert Bullet List
-- [ ] Convert Numbered List
+- [x] Convert Heading 1
+- [x] Convert Heading 2
+- [x] Convert Heading 3
+- [x] Convert Paragraph
+- [x] Convert Bullet List
+- [x] Convert Numbered List
 
 ---
 

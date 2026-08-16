@@ -48,6 +48,9 @@ video-note-agent/
 │       ├── 03_cleaned_content.md
 │       └── 04_notes_outline.md
 │
+├── scripts/
+│   └── optional batch and recovery commands
+│
 ├── tests/
 │   ├── test_downloader.py
 │   ├── test_local_video.py
@@ -80,7 +83,7 @@ No application code.
 
 Contains all business logic.
 
-Phase 4 introduces an output adapter boundary.
+Phase 5 introduces an output adapter boundary.
 
 Adapters publish already-generated knowledge assets and must not generate transcripts or notes.
 
@@ -92,12 +95,15 @@ Responsibilities:
 - Keep external destinations replaceable
 - Isolate adapter failures from core processing
 
-Planned adapters:
+Current adapters:
 
 - `markdown.py`
 - `notion.py`
 - `obsidian.py`
 - `feishu.py`
+
+Planned adapter:
+
 - `google_docs.py`
 
 #### input_adapters/
@@ -140,7 +146,7 @@ Responsibilities:
 
 - Validate local video paths
 - Support MP4, MOV, and MKV inputs
-- Transcribe local video audio with Whisper or faster-whisper
+- Transcribe local video audio with faster-whisper or the configured local Whisper API
 
 #### transcription.py
 
@@ -185,6 +191,13 @@ Responsibilities:
 - Shared helper functions
 
 Keep this file small.
+
+### scripts/
+
+Contains optional batch and recovery commands built on `app/` functions.
+
+Scripts must not create a second business-logic layer or replace the canonical `main.py`
+five-file workflow.
 
 ### output/
 

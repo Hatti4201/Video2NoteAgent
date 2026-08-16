@@ -12,11 +12,11 @@ Current Roadmap:
 
 ```text
 Phase 1 - YouTube Subtitle MVP: Completed
-Phase 2 - Per-Video Output Workspace
-Phase 3 - AI Note Processing
-Phase 4 - Transcription Provider Layer
-Phase 5 - Output Adapter Layer
-Phase 6 - Cloud Deployment
+Phase 2 - Per-Video Output Workspace: Completed
+Phase 3 - AI Note Processing: Completed
+Phase 4 - Transcription Provider Layer: In progress
+Phase 5 - Output Adapter Layer: Implemented except Google Docs
+Phase 6 - Cloud Deployment: Not started
 ```
 
 Current Objective:
@@ -41,14 +41,16 @@ Cloud deployment is planned for the future but is not required for local use.
 
 ---
 
-# MVP Features
+# Current Features
 
-The MVP supports:
+The current implementation supports:
 
 - YouTube URL input
+- Local `.mp4`, `.mov`, and `.mkv` input
 - Subtitle download
 - Transcript generation
 - YouTube audio ASR fallback when supported subtitles are unavailable
+- Local faster-whisper or configured local Whisper API transcription
 - Markdown note generation
 - Local file output
 
@@ -82,13 +84,14 @@ These files are the canonical source of truth for all publishing targets.
 
 Phase 3 adds AI note processing.
 
-Phase 4 defines a transcription provider layer for future local video and ASR providers.
+Phase 4 currently supports Doubao Speech, local faster-whisper, and a local Whisper API.
+Additional providers and a shared provider contract remain.
 
 Local files are always the primary source of truth.
 
 External systems are optional publishing destinations.
 
-Phase 5 defines an output adapter layer.
+Phase 5 publishes to local Markdown, Notion, Feishu, and Obsidian. Google Docs remains.
 
 Phase 6 defines future cloud deployment.
 
@@ -185,7 +188,18 @@ Future local video processing through Docker will require an input volume mount.
 ./output:/app/output
 ```
 
-The MVP does not support:
+Optional batch workflows:
+
+```bash
+python scripts/transcribe_local_videos_doubao.py /path/to/videos
+python scripts/reformat_local_transcripts_with_llm.py output/local_raw_transcripts
+python scripts/batch_edit_txt_transcripts_with_llm.py /path/to/txt-transcripts
+```
+
+Each script supports `--help`; these batch tools are separate from the canonical `main.py`
+five-file workflow.
+
+The current implementation does not support:
 
 - Web UI
 
@@ -234,14 +248,17 @@ Adapter design:
 - Feishu creates a Bitable record when `FEISHU_BITABLE_APP_TOKEN` and `FEISHU_BITABLE_TABLE_ID` are configured.
 - Feishu converts generated notes into structured document blocks instead of raw Markdown.
 
-Future transcription provider layer targets:
+Transcription layer status:
 
-- Local video files:
+- Implemented local video files:
   - `.mp4`
   - `.mov`
   - `.mkv`
-- ASR providers:
-  - Volcengine
+- Implemented transcription paths:
+  - faster-whisper
+  - Local Whisper API
+  - Doubao Speech / Volcengine TOS
+- Remaining provider targets:
   - Tencent ASR
   - Alibaba ASR
   - Deepgram
@@ -275,9 +292,10 @@ Configuration placeholders:
 TRANSCRIPTION_PROVIDER=doubao
 
 # Doubao Speech ASR
-DOUBAO_ASR_APP_ID=2614672586
+DOUBAO_ASR_APP_ID=
 DOUBAO_ASR_ACCESS_TOKEN=
-DOUBAO_ASR_RESOURCE_ID=volc.seedasr.auc
+VALID_ASR_RESOURCE_ID=
+DOUBAO_ASR_RESOURCE_ID=volc.bigasr.auc
 DOUBAO_ASR_SUBMIT_URL=https://openspeech.bytedance.com/api/v3/auc/bigmodel/submit
 DOUBAO_ASR_QUERY_URL=https://openspeech.bytedance.com/api/v3/auc/bigmodel/query
 DOUBAO_ASR_LANGUAGE=zh-CN
@@ -290,9 +308,18 @@ DOUBAO_ASR_SHOW_UTTERANCES=true
 # Volcengine TOS
 VOLCENGINE_ACCESS_KEY_ID=
 VOLCENGINE_SECRET_ACCESS_KEY=
-TOS_BUCKET=nika-mnemo
+TOS_BUCKET=
 TOS_REGION=cn-beijing
 TOS_ENDPOINT=tos-cn-beijing.volces.com
+
+# Optional local Whisper API
+LOCAL_WHISPER_BASE_URL=http://127.0.0.1:8001
+LOCAL_WHISPER_TRANSCRIBE_PATH=/transcribe/path
+LOCAL_WHISPER_MODEL=whisper
+LOCAL_WHISPER_LANGUAGE=
+LOCAL_WHISPER_TEMPERATURE=0
+LOCAL_WHISPER_TIMEOUT_SECONDS=600
+LOCAL_WHISPER_API_KEY=
 ```
 
 TOS uses IAM AK/SK. Doubao Speech ASR does not use IAM AK/SK; it uses old-console AppId and Access Token.
@@ -405,6 +432,7 @@ video-note-agent/
 ├── docs/
 ├── app/
 ├── output/
+├── scripts/
 ├── tests/
 
 ├── main.py
@@ -442,7 +470,7 @@ All development should follow:
 
 The project follows a local-first approach.
 
-The MVP must not:
+The application must not:
 
 - Access email accounts
 - Access cloud drives
@@ -453,7 +481,7 @@ The MVP must not:
 The system should only process:
 
 ```text
-User-provided video URLs
+User-provided video URLs and local video files
 ```
 
 ---
@@ -488,19 +516,16 @@ are satisfied.
 
 ---
 
-# Future Roadmap
+# Roadmap Status
 
 ```text
-Phase 1 - YouTube + Subtitle
-Phase 2 - Local Video Support + Whisper
-Phase 3 - Remote Private Ollama Notes
-Phase 4 - Output Adapter Architecture
-Phase 5 - Notion Adapter
-Phase 6 - Additional Output Adapters
-Phase 7 - Telegram
-Phase 8 - Docker
-Phase 9 - Windows Deployment
-Phase 10 - Secure Remote Access
-Future - Knowledge System
-Future - Personal Assistant Ecosystem
+Phase 1 - YouTube Subtitle MVP: Completed
+Phase 2 - Per-Video Output Workspace: Completed
+Phase 3 - AI Note Processing: Completed
+Phase 4 - Transcription Provider Layer: In progress
+Phase 5 - Output Adapter Layer: Implemented except Google Docs
+Phase 6 - Cloud Deployment: Not started
 ```
+
+Telegram input, Docker packaging, and batch-processing scripts are preserved capabilities,
+not additional numbered phases. See `docs/implementation-plan.md` for the authoritative plan.

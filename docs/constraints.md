@@ -138,6 +138,16 @@ Allowed Phase 3 LLM environment variables:
 - `QWEN_API_KEY`
 - `QWEN_BASE_URL`
 
+Allowed Phase 4 local Whisper API environment variables:
+
+- `LOCAL_WHISPER_BASE_URL`
+- `LOCAL_WHISPER_TRANSCRIBE_PATH`
+- `LOCAL_WHISPER_MODEL`
+- `LOCAL_WHISPER_LANGUAGE`
+- `LOCAL_WHISPER_TEMPERATURE`
+- `LOCAL_WHISPER_TIMEOUT_SECONDS`
+- `LOCAL_WHISPER_API_KEY`
+
 The Ollama API must not be exposed publicly.
 
 Allowed LLM providers:
@@ -218,11 +228,14 @@ The Feishu adapter should convert generated notes into structured Feishu documen
 
 Doubao Speech ASR is the first implemented ASR provider.
 
+Local Whisper API may be used as a private local-network transcription source when explicitly configured with environment variables.
+
 Allowed Doubao Speech ASR environment variables:
 
 - `TRANSCRIPTION_PROVIDER`
 - `DOUBAO_ASR_APP_ID`
 - `DOUBAO_ASR_ACCESS_TOKEN`
+- `VALID_ASR_RESOURCE_ID`
 - `DOUBAO_ASR_RESOURCE_ID`
 - `DOUBAO_ASR_SUBMIT_URL`
 - `DOUBAO_ASR_QUERY_URL`
@@ -263,9 +276,9 @@ TOS storage constraints:
 
 Cloud deployment is planned but not implemented.
 
-Phase 7 adds an optional Telegram input adapter.
+The current implementation includes an optional Telegram input adapter.
 
-Allowed Phase 7 environment variables:
+Allowed Telegram environment variables:
 
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_ALLOWED_USER_IDS`
@@ -283,7 +296,7 @@ The Telegram adapter must not:
 - Read local files from Telegram messages
 - Send unrelated local files
 
-Phase 8 adds Docker packaging.
+The current implementation includes Docker packaging.
 
 Docker deployment must:
 

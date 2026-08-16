@@ -12,7 +12,7 @@ from app.utils import VideoNoteError, detect_content_language
 DEFAULT_OLLAMA_BASE_URL = "http://100.111.104.41:11434"
 DEFAULT_OLLAMA_MODEL = "qwen3:8b"
 DEFAULT_CONNECT_TIMEOUT = 5
-DEFAULT_GENERATE_TIMEOUT = 120
+DEFAULT_GENERATE_TIMEOUT = 300
 DEFAULT_LLM_PROVIDER = "ollama"
 
 OPENAI_BASE_URL = "https://api.openai.com/v1"
@@ -38,6 +38,7 @@ LANGUAGE_LABELS = {
 OUTPUT_HEADINGS = {
     "english": {
         "edited_transcript": "Edited Transcript",
+        "outline": "Outline",
         "executive_summary": "Executive Summary",
         "key_takeaways": "Key Takeaways",
         "structured_outline": "Structured Outline",
@@ -45,6 +46,7 @@ OUTPUT_HEADINGS = {
     },
     "chinese": {
         "edited_transcript": "编辑后文本",
+        "outline": "大纲",
         "executive_summary": "执行摘要",
         "key_takeaways": "关键要点",
         "structured_outline": "结构化大纲",
@@ -388,6 +390,61 @@ def notes_outline_prompt(title: str, transcript: str) -> str:
     )
 
 
+def reformatted_transcript_prompt(title: str, transcript: str) -> str:
+    language = detect_content_language(transcript)
+    language_label = LANGUAGE_LABELS[language]
+    headings = OUTPUT_HEADINGS[language]
+
+    return "\n".join(
+        [
+            "You are a professional transcript editor and content structuring assistant.",
+            "",
+            "Rewrite the raw transcript into a readable markdown note.",
+            f"The transcript's primary language is {language_label}.",
+            f"Write the entire output in {language_label}, including section headings.",
+            "",
+            "GENERAL RULES",
+            "- Preserve the original meaning, viewpoints, examples, and sequence.",
+            "- Never add new facts, interpretations, or conclusions.",
+            "- Remove filler words, repetitions, false starts, greetings, calls to action, and promotional language that is not part of the core content.",
+            "- Convert spoken language into natural written language.",
+            "- Merge fragmented sentences into coherent paragraphs.",
+            "- Preserve speaker labels and timestamps when practical.",
+            "- If the transcript quality is poor, infer punctuation and paragraph breaks, but do not invent content.",
+            "",
+            "DEFAULT OUTPUT",
+            "Generate these sections in this order:",
+            f"# {headings['edited_transcript']}",
+            f"# {headings['outline']}",
+            f"# {headings['key_takeaways']}",
+            "",
+            "Edited Transcript:",
+            "- Preserve the substantive content while cleaning the prose.",
+            "- Use natural paragraphs.",
+            "- Keep the logical flow of the source.",
+            "",
+            "Outline:",
+            "- Extract major sections, arguments, and key points.",
+            "- Use a clear hierarchy.",
+            "- Keep the outline concise and readable.",
+            "",
+            "Key Takeaways:",
+            "- Summarize the most important insights in concise bullets.",
+            "- Focus on what the reader should remember.",
+            "",
+            "OUTPUT RULES",
+            "- Output only the requested markdown document.",
+            "- Do not include commentary, explanations, or meta text.",
+            "- Do not include any text outside the requested sections.",
+            "",
+            f"Title: {title}",
+            "",
+            "Transcript:",
+            transcript.strip(),
+        ]
+    )
+
+
 def generate_llm_documents(title: str, transcript: str) -> tuple[str, str]:
     config = get_llm_config()
     if config.provider == "ollama":
@@ -396,3 +453,11 @@ def generate_llm_documents(title: str, transcript: str) -> tuple[str, str]:
     cleaned_content = generate_provider_text(cleaned_content_prompt(title, transcript), config)
     notes_outline = generate_provider_text(notes_outline_prompt(title, transcript), config)
     return cleaned_content, notes_outline
+
+
+def generate_reformatted_transcript(title: str, transcript: str) -> str:
+    config = get_llm_config()
+    if config.provider == "ollama":
+        test_connection(base_url=config.base_url)
+
+    return generate_provider_text(reformatted_transcript_prompt(title, transcript), config)

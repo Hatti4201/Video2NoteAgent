@@ -369,168 +369,21 @@ The following are explicitly excluded from MVP:
 - Authentication
 - Multi-user support
 
-## Future Roadmap
+## Roadmap Status
 
-### Phase 1 - YouTube + Subtitle
-
-Status:
+The authoritative roadmap is `docs/implementation-plan.md`.
 
 ```text
-Completed
+Phase 1 - YouTube Subtitle MVP: Completed
+Phase 2 - Per-Video Output Workspace: Completed
+Phase 3 - AI Note Processing: Completed
+Phase 4 - Transcription Provider Layer: In progress
+Phase 5 - Output Adapter Layer: Implemented except Google Docs
+Phase 6 - Cloud Deployment: Not started
 ```
 
-Included:
-
-- YouTube URL input
-- Subtitle download
-- Transcript generation
-- Rule-based notes
-
-### Phase 2 - Local Video Support + Whisper
-
-Status:
-
-```text
-Completed
-```
-
-Additional Inputs:
-
-```text
-.mp4
-.mov
-.mkv
-```
-
-Workflow:
-
-```text
-Local Video
-    ↓
-Audio Extraction
-    ↓
-Whisper / faster-whisper
-    ↓
-Transcript
-    ↓
-Existing Notes Pipeline
-```
-
-Expected output remains:
-
-```text
-metadata.json
-01_raw_transcript.txt
-02_formatted_transcript.md
-03_cleaned_content.md
-04_notes_outline.md
-```
-
-### Phase 3 - Remote Private Ollama Notes
-
-Status:
-
-```text
-Completed
-```
-
-- Ollama integration
-- Remote private Ollama API support
-- Improved note quality
-- Better summaries
-- Better action items
-
-### Phase 4 - Output Adapter Architecture
-
-- Define output adapter contract
-- Treat local markdown files as the primary output
-- Keep publishing destinations optional
-- Ensure adapter failures do not break local output generation
-
-### Phase 5 - Notion Adapter
-
-- Create Notion pages automatically
-- Store generated notes
-- Return page URL
-
-### Phase 6 - Additional Output Adapters
-
-Status:
-
-```text
-Completed
-```
-
-Included:
-
-- Obsidian
-
-Future adapters:
-
-- Feishu Docs
-- Google Docs
-
-### Phase 7 - Telegram Bot
-
-Status:
-
-```text
-Completed
-```
-
-- Remote chat interface
-- URL submission
-- Allowed user ID control
-- Status notifications
-- Result delivery
-
-### Phase 8 - Docker Deployment
-
-- Dockerfile
-- docker-compose
-- Environment management
-
-### Phase 9 - Windows Home Server Deployment
-
-- WSL2 deployment
-- Local model deployment
-- Long-running service setup
-
-### Phase 10 - Secure Remote Access
-
-- Tailscale
-- ZeroTier
-- Cloudflare Tunnel
-
-### Future - Personal Knowledge System
-
-Additional Inputs:
-
-```text
-PDF
-Podcast
-Web Article
-Meeting Recording
-```
-
-Additional Outputs:
-
-```text
-Knowledge Base
-Daily Digest
-Topic Collections
-```
-
-### Future - Personal Assistant Ecosystem
-
-Specialized Agents:
-
-```text
-Video Agent
-Document Agent
-Calendar Agent
-Email Agent
-```
+Telegram input, Docker packaging, and batch-processing scripts already exist. They are
+preserved capabilities, not additional numbered phases.
 
 ## Success Criteria
 
